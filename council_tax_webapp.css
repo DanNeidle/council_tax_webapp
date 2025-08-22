@@ -1,0 +1,207 @@
+:root {
+  --primary-blue: #1133AF;
+  --light-gray: #f8f9fa;
+  --medium-gray: #dee2e6;
+  --dark-gray: #495057;
+  --text-color: #212529;
+  --card-shadow: 0 6px 20px rgba(0, 0, 0, 0.07);
+  --border-radius: 12px;
+  --transition-speed: 0.3s;
+  --z-popover: 20;
+}
+
+*{box-sizing:border-box}
+
+body{
+  font-family:'Poppins',sans-serif;
+  line-height:1.6;
+  color:var(--text-color);
+  background:var(--light-gray);
+  margin:0;
+  padding:20px;
+}
+
+.container{
+  max-width:1100px;
+  margin:20px auto;
+  padding:30px 40px;
+  background:#fff;
+  border-radius:var(--border-radius);
+  box-shadow:var(--card-shadow);
+  position:relative;
+}
+
+header{
+  display:flex;align-items:center;flex-wrap:wrap;gap:20px;
+  border-bottom:2px solid var(--medium-gray);padding-bottom:20px;margin-bottom:30px
+}
+.logo-img{height:50px}
+header h1{color:var(--primary-blue);font-size:clamp(1.5rem,4vw,2rem);margin:0;font-weight:700}
+
+h2{color:var(--primary-blue);margin:0 0 6px 0}
+
+#controls{
+  background:var(--light-gray);border:1px solid var(--medium-gray);border-radius:12px;
+  padding:16px;margin-top:16px
+}
+.control-row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start}
+.flex-1{flex:1 1 320px;min-width:0}
+.control-group.hidden{visibility:hidden;opacity:0;width:0;pointer-events:none;transition:opacity .3s}
+.control-group strong{display:block;margin-bottom:8px;color:var(--dark-gray)}
+
+/* Toggle buttons - robust wrapping */
+.toggle-switch{
+  display:flex;flex-wrap:wrap;gap:6px;max-width:100%;background:#e9ecef;border-radius:20px;padding:4px
+}
+.toggle-switch input{display:none}
+.toggle-switch label{
+  padding:8px 12px;border-radius:16px;font-weight:600;cursor:pointer;
+  flex:1 1 220px;min-width:120px;text-align:center;white-space:normal;word-break:break-word
+}
+.toggle-switch input:checked+label{background:var(--primary-blue);color:#fff}
+.toggle-switch.ancillary{background:#f1f3f5}
+
+/* Band boundary slider */
+.slider-container{padding:36px 8px 40px;margin:8px 0 20px}
+#band-slider{height:10px}
+#band-slider .noUi-connect{background:var(--primary-blue)}
+#band-slider .noUi-handle{height:24px;width:24px;top:-7px;right:-12px;border-radius:50%;background:#fff;border:2px solid var(--primary-blue)}
+
+/* Remove grey border around slider tooltips/pips */
+#band-slider .noUi-tooltip {
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Decorative fixed marker at £1.5m (start) */
+#band-slider { position: relative; }
+#band-slider .fixed-start-marker{
+  position: absolute;
+  left: 0;                          /* start of the slider */
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* Circular dot styled like a faded noUiSlider handle */
+#band-slider .fixed-start-marker::before{
+  content: "";
+  display: block;
+  width: 24px;                      /* same size as real handle */
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--primary-blue);
+  opacity: 0.4;                     /* faded look */
+  box-sizing: border-box;
+}
+
+/* Label above the dot */
+#band-slider .fixed-start-marker > span{
+  position: absolute;
+  top: -28px;                       /* sit above the dot */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #495057;
+  opacity: 0.6;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+
+
+.table-container{margin-top:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1100px;margin-left:auto;margin-right:auto}
+table{width:100%;border-collapse:collapse;table-layout:auto}
+th,td{padding:12px 10px;border-bottom:1px solid var(--medium-gray);vertical-align:middle;white-space:nowrap}
+th{background:var(--primary-blue);color:#fff}
+.band-name{font-weight:700}
+
+.rate-cell{display:flex;align-items:center;gap:8px;min-width:0}
+.rate-val{font-weight:700;color:var(--primary-blue);min-width:2.4em;text-align:right}
+.rate-suffix{opacity:.7}
+.rate-cell input[type=range]{flex:1 1 auto;min-width:0}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:260px;height:8px;background:var(--medium-gray);
+  border-radius:6px;outline:none;cursor:pointer
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:20px;height:20px;background:var(--primary-blue);border-radius:50%
+}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;background:var(--primary-blue);border-radius:50%;border:none}
+
+.info-col{width:44px;text-align:center}
+.info-btn{border:1px solid var(--medium-gray);background:#fff;border-radius:8px;line-height:0;padding:6px;cursor:pointer}
+.info-btn .material-icons-outlined{font-size:18px;color:var(--dark-gray)}
+
+/* Popover (non-modal) */
+.band-popover{position:fixed;z-index:var(--z-popover);background:#fff;border:1px solid var(--medium-gray);border-radius:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.12);padding:10px 12px;max-width:420px}
+.band-popover[hidden]{display:none}
+.band-popover-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.popover-close{background:transparent;border:0;font-size:18px;cursor:pointer}
+.band-details{margin:0;display:grid;grid-template-columns:auto 1fr;gap:6px 12px}
+
+/* Results banner */
+#results{margin-top:18px;padding:16px;border-radius:12px;text-align:center;color:#fff;background:linear-gradient(45deg,var(--primary-blue),#3a59c4)}
+#results p{margin:0;font-weight:600;opacity:.95}
+#results span{display:block;font-size:clamp(1.8rem,6vw,2.6rem);font-weight:700;margin-top:6px}
+
+/* Visibility helpers */
+.show-mobile{display:none}
+.hide-mobile{display:table-cell}
+
+/* --- MOBILE COMPACT LAYOUT --- */
+@media (max-width: 900px){
+  .bands-table thead th.info-col{font-size:0}
+
+  th,td{padding:10px 8px}
+  .hide-mobile{display:none !important}       /* hide all non-essential columns */
+  .show-mobile{display:table-cell !important}
+  table{table-layout:fixed}
+  .bands-table th:first-child{width:60px}     /* Band col */
+  .bands-table th:nth-child(3){width:auto}    /* Slider col */
+  .bands-table th:last-child{width:44px}      /* Info col */
+  input[type=range]{width:100%}               /* Slider fills cell */
+}
+
+
+/* Tight info column; wide slider */
+.bands-table th.info-col,
+.bands-table td.info-col{
+  width:36px; padding-left:4px; padding-right:4px; text-align:right; white-space:nowrap;
+}
+.rate-cell{ width:100%; }
+.rate-cell .rate-slider{ width:100%; max-width:none; }
+
+/* Info button borderless */
+.info-btn{ border:0; background:transparent; line-height:0; padding:6px; cursor:pointer; }
+.info-btn .material-icons-outlined{ font-size:18px; }
+
+/* Keep desktop table from overflowing horizontally */
+@media (min-width: 901px){
+  th, td { white-space: normal; }
+  .table-container{ overflow-x: visible; }
+}
+
+/* Popover clamped to viewport */
+.band-popover{
+  position: fixed;
+  max-width: min(90vw, 380px);
+}
+
+
+@media (max-width: 900px){
+  .bands-table th:nth-child(1),
+  .bands-table td:nth-child(1){ display:none; }
+
+  .bands-table th:nth-child(2),
+  .bands-table td:nth-child(2){ display:table-cell !important; width:28%; font-size:0.85rem; }
+
+  .bands-table th:nth-child(3),
+  .bands-table td:nth-child(3){ width:auto; }
+
+  .bands-table th:last-child,
+  .bands-table td:last-child{ width:36px; }
+}

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Council Tax Bands Modeller</title>
+
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+
+  <!-- noUiSlider -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.css" />
+
+  <link rel="stylesheet" href="council_tax_webapp.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="https://taxpolicy.org.uk" target="_blank" rel="noopener noreferrer" class="logo-link">
+        <img src="tpal_logo_standard.jpg" alt="Tax Policy Associates Ltd" class="logo-img"
+             onerror="this.onerror=null;this.src='https://placehold.co/200x50/1133AF/FFFFFF?text=TPA+Logo';">
+      </a>
+      <h1>Modelling new council tax bands</h1>
+    </header>
+
+    <main>
+      <strong>Position new high-value bands</strong>
+      <div class="slider-container">
+        <div id="band-slider"></div>
+      </div>
+
+      <div id="controls">
+        <div class="control-row">
+          <div class="control-group flex-1">
+            <strong>Type of tax</strong>
+            <div class="toggle-switch">
+              <input type="radio" id="mode-multiplier" name="mode" value="multiplier" checked />
+              <label for="mode-multiplier">Multiplier</label>
+              <input type="radio" id="mode-percentage" name="mode" value="percentage" />
+              <label for="mode-percentage">% of Property Value</label>
+            </div>
+          </div>
+
+          <div id="percentage-options" class="control-group hidden flex-1"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="bands-table">
+          <thead>
+            <tr>
+              <th>Band</th>
+              <th class="hide-mobile">Value Range (£)</th>
+              <th id="rate-header">Multiplier (vs Band D)</th>
+              <th class="hide-mobile">Est. Properties</th>
+              <th class="hide-mobile">Average Increase</th>
+              <th id="revenue-header" class="hide-mobile">Total Additional Revenue</th>
+              <th class="show-mobile info-col">Info</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- H1 -->
+            <tr>
+              <td class="band-name">H1</td>
+              <td class="hide-mobile">£1.5m-<span id="h1-top-display">3m</span></td>
+              <td class="rate-cell">
+                <span class="rate-val">2.0</span><span class="rate-suffix">x</span>
+                <input type="range" class="rate-slider" data-band="0" min="2" max="12" value="2" step="0.1">
+              </td>
+              <td id="h1-props" class="hide-mobile"></td>
+              <td id="h1-avg-tax" class="hide-mobile"></td>
+              <td id="h1-revenue" class="hide-mobile"></td>
+              <td class="show-mobile info-col">
+                <button type="button" class="info-btn" aria-label="Band H1 details" data-band="0">
+                  <span class="material-icons-outlined">info</span>
+                </button>
+                <div id="band-popover-0" class="band-popover" role="dialog" hidden>
+                  <div class="band-popover-header">
+                    <strong class="band-title">H1</strong>
+                    <button type="button" class="popover-close" aria-label="Close">×</button>
+                  </div>
+                  <dl class="band-details">
+                    <dt>Value Range</dt><dd class="band-range"></dd>
+                    <dt class="rate-label">Multiplier</dt><dd class="band-rate"></dd>
+                    <dt>Est. Properties</dt><dd class="band-props"></dd>
+                    <dt>Average Increase</dt><dd class="band-avg"></dd>
+                    <dt>Total Additional Revenue</dt><dd class="band-addl"></dd>
+                  </dl>
+                </div>
+              </td>
+            </tr>
+
+            <!-- H2 -->
+            <tr>
+              <td class="band-name">H2</td>
+              <td class="hide-mobile"><span id="h2-low-display">3m</span>-<span id="h2-top-display">5m</span></td>
+              <td class="rate-cell">
+                <span class="rate-val">2.0</span><span class="rate-suffix">x</span>
+                <input type="range" class="rate-slider" data-band="1" min="2" max="12" value="2" step="0.1">
+              </td>
+              <td id="h2-props" class="hide-mobile"></td>
+              <td id="h2-avg-tax" class="hide-mobile"></td>
+              <td id="h2-revenue" class="hide-mobile"></td>
+              <td class="show-mobile info-col">
+                <button type="button" class="info-btn" aria-label="Band H2 details" data-band="1">
+                  <span class="material-icons-outlined">info</span>
+                </button>
+                <div id="band-popover-1" class="band-popover" role="dialog" hidden>
+                  <div class="band-popover-header">
+                    <strong class="band-title">H2</strong>
+                    <button type="button" class="popover-close" aria-label="Close">×</button>
+                  </div>
+                  <dl class="band-details">
+                    <dt>Value Range</dt><dd class="band-range"></dd>
+                    <dt class="rate-label">Multiplier</dt><dd class="band-rate"></dd>
+                    <dt>Est. Properties</dt><dd class="band-props"></dd>
+                    <dt>Average Increase</dt><dd class="band-avg"></dd>
+                    <dt>Total Additional Revenue</dt><dd class="band-addl"></dd>
+                  </dl>
+                </div>
+              </td>
+            </tr>
+
+            <!-- H3 -->
+            <tr>
+              <td class="band-name">H3</td>
+              <td class="hide-mobile"><span id="h3-low-display">5m</span>-<span id="h3-top-display">10m</span></td>
+              <td class="rate-cell">
+                <span class="rate-val">2.0</span><span class="rate-suffix">x</span>
+                <input type="range" class="rate-slider" data-band="2" min="2" max="12" value="2" step="0.1">
+              </td>
+              <td id="h3-props" class="hide-mobile"></td>
+              <td id="h3-avg-tax" class="hide-mobile"></td>
+              <td id="h3-revenue" class="hide-mobile"></td>
+              <td class="show-mobile info-col">
+                <button type="button" class="info-btn" aria-label="Band H3 details" data-band="2">
+                  <span class="material-icons-outlined">info</span>
+                </button>
+                <div id="band-popover-2" class="band-popover" role="dialog" hidden>
+                  <div class="band-popover-header">
+                    <strong class="band-title">H3</strong>
+                    <button type="button" class="popover-close" aria-label="Close">×</button>
+                  </div>
+                  <dl class="band-details">
+                    <dt>Value Range</dt><dd class="band-range"></dd>
+                    <dt class="rate-label">Multiplier</dt><dd class="band-rate"></dd>
+                    <dt>Est. Properties</dt><dd class="band-props"></dd>
+                    <dt>Average Increase</dt><dd class="band-avg"></dd>
+                    <dt>Total Additional Revenue</dt><dd class="band-addl"></dd>
+                  </dl>
+                </div>
+              </td>
+            </tr>
+
+            <!-- H4 -->
+            <tr>
+              <td class="band-name">H4</td>
+              <td class="hide-mobile"><span id="h4-low-display">10m</span>+</td>
+              <td class="rate-cell">
+                <span class="rate-val">2.0</span><span class="rate-suffix">x</span>
+                <input type="range" class="rate-slider" data-band="3" min="2" max="12" value="2" step="0.1">
+              </td>
+              <td id="h4-props" class="hide-mobile"></td>
+              <td id="h4-avg-tax" class="hide-mobile"></td>
+              <td id="h4-revenue" class="hide-mobile"></td>
+              <td class="show-mobile info-col">
+                <button type="button" class="info-btn" aria-label="Band H4 details" data-band="3">
+                  <span class="material-icons-outlined">info</span>
+                </button>
+                <div id="band-popover-3" class="band-popover" role="dialog" hidden>
+                  <div class="band-popover-header">
+                    <strong class="band-title">H4</strong>
+                    <button type="button" class="popover-close" aria-label="Close">×</button>
+                  </div>
+                  <dl class="band-details">
+                    <dt>Value Range</dt><dd class="band-range"></dd>
+                    <dt class="rate-label">Multiplier</dt><dd class="band-rate"></dd>
+                    <dt>Est. Properties</dt><dd class="band-props"></dd>
+                    <dt>Average Increase</dt><dd class="band-avg"></dd>
+                    <dt>Total Additional Revenue</dt><dd class="band-addl"></dd>
+                  </dl>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="results">
+        <span id="revenue-difference"></span>
+        <p>Additional revenue raised</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.7.1/nouislider.min.js"></script>
+  <script src="council_tax_webapp.js"></script>
+</body>
+</html>
