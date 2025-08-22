@@ -77,6 +77,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Calculations & UI Updates ---
     const BASE_REVENUE = TOTAL_PROPERTIES_OVER_1_5M * BASE_BAND_H_TAX * EFFECTIVE_RATE;
 
+    
+
     function update() {
         let totalNewRevenue = 0;
         const boundaries = [BAND_H_START_VALUE, ...state.bandBoundaries, Infinity];
