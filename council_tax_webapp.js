@@ -41,21 +41,178 @@ document.addEventListener("DOMContentLoaded", () => {
     let state = JSON.parse(JSON.stringify(initialState));
 
     // --- Formatting Helpers ---
+    // --- Formatting Helpers ---
     const formatToMillions = (num) =>
-        `£${Math.round(num / 1000000).toLocaleString()}m`;
+        `£${(Math.round(num / 1000000) + 0).toLocaleString()}m`;
     const formatToCurrency = (num) => `£${Math.round(num).toLocaleString()}`;
     const formatSliderTooltip = (value) =>
         `£${(value / 1000000).toFixed(2)}m`.replace(".00", "");
 
     // --- Estimation Functions (Memoized) ---
     const estimationCache = new Map();
-    // Function stubs; full implementations appear later in the file
-    function linearInterpolate(x, xp, fp) {}
-    function getPropertyDistribution() {}
-    function estimateHighValueProperties(lower_bound, upper_bound) {}
-    function estimateAverageValueInBand(lower_bound, upper_bound) {}
-    // NOTE: Full code for estimation functions is included below for completeness
 
+    // --- Full Estimation Functions ---
+    // NOTE: This entire block is moved up to ensure all functions and
+    // dependent constants are defined before they are called by UI initializers.
+    function linearInterpolate(x, xp, fp) {
+        if (x <= xp[0]) return fp[0];
+        if (x >= xp[xp.length - 1]) return fp[xp.length - 1];
+        for (let i = 0; i < xp.length - 1; i++) {
+            if (x >= xp[i] && x <= xp[i + 1]) {
+                return (
+                    fp[i] +
+                    ((x - xp[i]) * (fp[i + 1] - fp[i])) / (xp[i + 1] - xp[i])
+                );
+            }
+        }
+        return fp[fp.length - 1];
+    }
+
+    /**
+     * Estimates the number of properties held in trusts/companies (ATED)
+     * with a value between a lower and upper bound.
+     */
+    function estimatePropertiesFromAted(lower, upper) {
+        // --- Constants and Configuration ---
+        const MIN_LOWER_BOUND = 1500000;
+        const VALUE_CAP = 210000000; // Matches MAX_PRICE
+
+        // Data points for interpolation (Value, Cumulative Count > Value)
+        const INTERP_VALUES = [
+            1000000, 2000000, 5000000, 10000000, 20000000,
+        ];
+        const INTERP_CUMULATIVE_COUNTS = [3230, 1740, 680, 270, 120];
+
+        // Pareto distribution parameters for values > £20m
+        const PARETO_Xm = 20000000;
+        const PARETO_N = 120;
+        const PARETO_ALPHA = 1.176;
+
+        // --- Input Validation ---
+        if (upper < MIN_LOWER_BOUND) {
+            return 0;
+        }
+        lower = Math.max(lower, MIN_LOWER_BOUND);
+
+        if (upper < lower) {
+            return 0;
+        }
+
+        // --- Helper Function for Estimation ---
+        const getCumulativeCount = (value) => {
+            const cappedValue = Math.min(value, VALUE_CAP);
+            if (cappedValue <= PARETO_Xm) {
+                return linearInterpolate(
+                    cappedValue,
+                    INTERP_VALUES,
+                    INTERP_CUMULATIVE_COUNTS,
+                );
+            } else {
+                return PARETO_N * (PARETO_Xm / cappedValue) ** PARETO_ALPHA;
+            }
+        };
+
+        // --- Main Calculation ---
+        const countAboveLower = getCumulativeCount(lower);
+        const countAboveUpper = getCumulativeCount(upper);
+        return countAboveLower - countAboveUpper;
+    }
+
+    // Calculate the total number of ATED properties to adjust the stamp duty scaling factor.
+    const TOTAL_ATED_PROPERTIES_OVER_1_5M = estimatePropertiesFromAted(1500000, MAX_PRICE);
+
+    // The new total for stamp duty properties is the overall total minus the ATED properties.
+    const ADJUSTED_STAMP_DUTY_PROPERTIES_OVER_1_5M = 
+        TOTAL_PROPERTIES_OVER_1_5M - TOTAL_ATED_PROPERTIES_OVER_1_5M;
+
+    function getPropertyDistribution() {
+        const cacheKey = "distribution";
+        if (estimationCache.has(cacheKey)) return estimationCache.get(cacheKey);
+        const original_total_over_1_5m = 10600.0,
+            original_cumulative_counts = [0, 5100, 8200, 9200, 9600, 10300],
+            original_count_over_10m = 300.0;
+        
+        // Use the adjusted total for scaling to avoid double-counting.
+        const scaling_factor =
+            ADJUSTED_STAMP_DUTY_PROPERTIES_OVER_1_5M / original_total_over_1_5m;
+
+        const scaled_cumulative_counts = original_cumulative_counts.map(
+                (c) => c * scaling_factor,
+            ),
+            scaled_total_count_over_10m =
+                original_count_over_10m * scaling_factor;
+        const known_prices_m = [1.5, 2.0, 3.0, 4.0, 5.0, 10.0],
+            alpha = 1.736966;
+        const log_prices = known_prices_m.map((p) => Math.log(p)),
+            log_counts = scaled_cumulative_counts.map((c) => Math.log1p(c));
+        const get_cumulative_count_at_price = (price_gbp) => {
+            price_gbp = Math.min(price_gbp, MAX_PRICE);
+            const price_m = price_gbp / 1000000;
+            if (price_m <= 10.0)
+                return Math.expm1(
+                    linearInterpolate(
+                        Math.log(price_m),
+                        log_prices,
+                        log_counts,
+                    ),
+                );
+            else {
+                const max_price_m = MAX_PRICE / 1000000;
+                const numerator = 10.0 ** -alpha - price_m ** -alpha,
+                    denominator = 10.0 ** -alpha - max_price_m ** -alpha;
+                return (
+                    scaled_cumulative_counts[
+                        scaled_cumulative_counts.length - 1
+                    ] +
+                    scaled_total_count_over_10m * (numerator / denominator)
+                );
+            }
+        };
+        estimationCache.set(cacheKey, get_cumulative_count_at_price);
+        return get_cumulative_count_at_price;
+    }
+
+    function estimatePropertiesFromStampReturns(lower_bound, upper_bound) {
+        // 1. Estimate from stamp duty data (flow), now correctly scaled.
+        const get_cumulative_count_at_price = getPropertyDistribution();
+        const clamped_lower = Math.max(lower_bound, BAND_H_START_VALUE);
+        const clamped_upper = isFinite(upper_bound) ? upper_bound : MAX_PRICE;
+        const stampDutyEstimate =
+            get_cumulative_count_at_price(clamped_upper) -
+            get_cumulative_count_at_price(clamped_lower);
+
+        // 2. Estimate from ATED data (stock).
+        const atedEstimate = estimatePropertiesFromAted(lower_bound, upper_bound);
+
+        // 3. Return the combined total.
+        return stampDutyEstimate + atedEstimate;
+    }
+
+    function estimateAverageValueInBand(lower_bound, upper_bound) {
+        const cacheKey = `avg-${lower_bound}-${upper_bound}`;
+        if (estimationCache.has(cacheKey)) return estimationCache.get(cacheKey);
+        lower_bound = Math.max(lower_bound, BAND_H_START_VALUE);
+        upper_bound = isFinite(upper_bound) ? upper_bound : MAX_PRICE;
+        const totalProperties = estimatePropertiesFromStampReturns(
+            lower_bound,
+            upper_bound,
+        );
+        if (totalProperties < 1) return (lower_bound + upper_bound) / 2;
+        let totalValue = 0;
+        const steps = 100,
+            stepSize = (upper_bound - lower_bound) / steps;
+        for (let i = 0; i < steps; i++) {
+            const slice_low = lower_bound + i * stepSize,
+                slice_high = slice_low + stepSize;
+            totalValue +=
+                estimatePropertiesFromStampReturns(slice_low, slice_high) *
+                (slice_low + stepSize / 2);
+        }
+        const averageValue = totalValue / totalProperties;
+        estimationCache.set(cacheKey, averageValue);
+        return averageValue;
+    }
+    
     // --- DOM Element References ---
     const dom = {
         revenueDifference: document.getElementById("revenue-difference"),
@@ -116,7 +273,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const rate = parseFloat(band.slider.value);
             band.rateVal.textContent = rate.toFixed(1);
 
-            const propertyCount = estimateHighValueProperties(
+            const propertyCount = estimatePropertiesFromStampReturns(
                 boundaries[i],
                 boundaries[i + 1],
             );
@@ -249,100 +406,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initialize the UI with stored defaults
     handleModeChange();
-
-    // --- Full Estimation Functions ---
-    function linearInterpolate(x, xp, fp) {
-        if (x <= xp[0]) return fp[0];
-        if (x >= xp[xp.length - 1]) return fp[xp.length - 1];
-        for (let i = 0; i < xp.length - 1; i++) {
-            if (x >= xp[i] && x <= xp[i + 1]) {
-                return (
-                    fp[i] +
-                    ((x - xp[i]) * (fp[i + 1] - fp[i])) / (xp[i + 1] - xp[i])
-                );
-            }
-        }
-        return fp[fp.length - 1];
-    }
-
-    function getPropertyDistribution() {
-        const cacheKey = "distribution";
-        if (estimationCache.has(cacheKey)) return estimationCache.get(cacheKey);
-        const original_total_over_1_5m = 10600.0,
-            original_cumulative_counts = [0, 5100, 8200, 9200, 9600, 10300],
-            original_count_over_10m = 300.0;
-        const scaling_factor =
-            TOTAL_PROPERTIES_OVER_1_5M / original_total_over_1_5m;
-        const scaled_cumulative_counts = original_cumulative_counts.map(
-                (c) => c * scaling_factor,
-            ),
-            scaled_total_count_over_10m =
-                original_count_over_10m * scaling_factor;
-        const known_prices_m = [1.5, 2.0, 3.0, 4.0, 5.0, 10.0],
-            alpha = 1.736966;
-        const log_prices = known_prices_m.map((p) => Math.log(p)),
-            log_counts = scaled_cumulative_counts.map((c) => Math.log1p(c));
-        const get_cumulative_count_at_price = (price_gbp) => {
-            price_gbp = Math.min(price_gbp, MAX_PRICE);
-            const price_m = price_gbp / 1000000;
-            if (price_m <= 10.0)
-                return Math.expm1(
-                    linearInterpolate(
-                        Math.log(price_m),
-                        log_prices,
-                        log_counts,
-                    ),
-                );
-            else {
-                const max_price_m = MAX_PRICE / 1000000;
-                const numerator = 10.0 ** -alpha - price_m ** -alpha,
-                    denominator = 10.0 ** -alpha - max_price_m ** -alpha;
-                return (
-                    scaled_cumulative_counts[
-                        scaled_cumulative_counts.length - 1
-                    ] +
-                    scaled_total_count_over_10m * (numerator / denominator)
-                );
-            }
-        };
-        estimationCache.set(cacheKey, get_cumulative_count_at_price);
-        return get_cumulative_count_at_price;
-    }
-
-    function estimateHighValueProperties(lower_bound, upper_bound) {
-        const get_cumulative_count_at_price = getPropertyDistribution();
-        lower_bound = Math.max(lower_bound, BAND_H_START_VALUE);
-        upper_bound = isFinite(upper_bound) ? upper_bound : MAX_PRICE;
-        return (
-            get_cumulative_count_at_price(upper_bound) -
-            get_cumulative_count_at_price(lower_bound)
-        );
-    }
-
-    function estimateAverageValueInBand(lower_bound, upper_bound) {
-        const cacheKey = `avg-${lower_bound}-${upper_bound}`;
-        if (estimationCache.has(cacheKey)) return estimationCache.get(cacheKey);
-        lower_bound = Math.max(lower_bound, BAND_H_START_VALUE);
-        upper_bound = isFinite(upper_bound) ? upper_bound : MAX_PRICE;
-        const totalProperties = estimateHighValueProperties(
-            lower_bound,
-            upper_bound,
-        );
-        if (totalProperties < 1) return (lower_bound + upper_bound) / 2;
-        let totalValue = 0;
-        const steps = 100,
-            stepSize = (upper_bound - lower_bound) / steps;
-        for (let i = 0; i < steps; i++) {
-            const slice_low = lower_bound + i * stepSize,
-                slice_high = slice_low + stepSize;
-            totalValue +=
-                estimateHighValueProperties(slice_low, slice_high) *
-                (slice_low + stepSize / 2);
-        }
-        const averageValue = totalValue / totalProperties;
-        estimationCache.set(cacheKey, averageValue);
-        return averageValue;
-    }
 });
 
 // --- Info button popovers (delegated; viewport clamped; click-anywhere closes) ---
