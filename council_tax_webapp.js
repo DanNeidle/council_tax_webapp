@@ -308,7 +308,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     totalAvgTax = BASE_BAND_H_TAX + marginalTax;
                 }
                 avgIncrease = totalAvgTax - BASE_BAND_H_TAX;
-                bandRevenue = propertyCount * totalAvgTax * EFFECTIVE_RATE;
+                bandRevenue = propertyCount * avgIncrease * EFFECTIVE_RATE;
             }
 
             totalNewRevenue += bandRevenue;
@@ -318,7 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
             band.revenue.textContent = formatToMillions(bandRevenue);
         }
 
-        const difference = totalNewRevenue - BASE_REVENUE;
+        const difference = totalNewRevenue;
         dom.revenueDifference.textContent = formatToMillions(difference);
     }
 
